@@ -127,3 +127,10 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# IntelliJ IDEA related
+.idea/
+*.iml
+
+# CSV files in data folder
+/data/*.csv

@@ -1,0 +1,346 @@
+{
+  "settings" : {
+    "number_of_shards" : 1
+  },
+  "mappings": {
+    "properties": {
+      "@timestamp": {
+        "type": "date"
+      },
+      "@version": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "additional_connection": {
+        "properties": {
+          "ct_dst_ltm": {
+            "type": "long"
+          },
+          "ct_dst_sport_ltm": {
+            "type": "long"
+          },
+          "ct_dst_src_ltm": {
+            "type": "long"
+          },
+          "ct_src_dport_ltm": {
+            "type": "long"
+          },
+          "ct_src_ltm": {
+            "type": "long"
+          },
+          "ct_srv_dst": {
+            "type": "long"
+          },
+          "ct_srv_src": {
+            "type": "long"
+          }
+        }
+      },
+      "additional_general_purpose": {
+        "properties": {
+          "ct_flw_http_mthd": {
+            "type": "long"
+          },
+          "ct_ftp_cmd": {
+            "type": "long"
+          },
+          "ct_state_ttl": {
+            "type": "long"
+          },
+          "is_ftp_login": {
+            "type": "long"
+          },
+          "is_sm_ips_ports": {
+            "type": "long"
+          }
+        }
+      },
+      "attack": {
+        "properties": {
+          "category": {
+            "type": "text",
+            "fields": {
+              "keyword": {
+                "type": "keyword",
+                "ignore_above": 256
+              }
+            }
+          },
+          "label": {
+            "type": "long"
+          }
+        }
+      },
+      "destination": {
+        "properties": {
+          "bytes": {
+            "type": "long"
+          },
+          "ip": {
+            "type": "ip"
+          },
+          "port": {
+            "type": "long"
+          }
+        }
+      },
+      "ecs": {
+        "properties": {
+          "version": {
+            "type": "text",
+            "fields": {
+              "keyword": {
+                "type": "keyword",
+                "ignore_above": 256
+              }
+            }
+          }
+        }
+      },
+      "event": {
+        "properties": {
+          "action": {
+            "type": "text",
+            "fields": {
+              "keyword": {
+                "type": "keyword",
+                "ignore_above": 256
+              }
+            }
+          },
+          "category": {
+            "type": "text",
+            "fields": {
+              "keyword": {
+                "type": "keyword",
+                "ignore_above": 256
+              }
+            }
+          },
+          "dataset": {
+            "type": "text",
+            "fields": {
+              "keyword": {
+                "type": "keyword",
+                "ignore_above": 256
+              }
+            }
+          },
+          "duration": {
+            "type": "float"
+          },
+          "end": {
+            "type": "date"
+          },
+          "kind": {
+            "type": "text",
+            "fields": {
+              "keyword": {
+                "type": "keyword",
+                "ignore_above": 256
+              }
+            }
+          },
+          "start": {
+            "type": "date"
+          }
+        }
+      },
+      "network": {
+        "properties": {
+          "bytes": {
+            "type": "long"
+          },
+          "packets": {
+            "type": "long"
+          },
+          "protocol": {
+            "type": "text",
+            "fields": {
+              "keyword": {
+                "type": "keyword",
+                "ignore_above": 256
+              }
+            }
+          },
+          "transport": {
+            "type": "text",
+            "fields": {
+              "keyword": {
+                "type": "keyword",
+                "ignore_above": 256
+              }
+            }
+          },
+          "type": {
+            "type": "text",
+            "fields": {
+              "keyword": {
+                "type": "keyword",
+                "ignore_above": 256
+              }
+            }
+          }
+        }
+      },
+      "http": {
+        "properties": {
+          "response": {
+            "properties": {
+              "bytes": {
+                "type": "long"
+              }
+            }
+          }
+        }
+      },
+      "zeek": {
+        "properties": {
+          "http": {
+            "properties": {
+              "trans_depth": {
+                "type": "long"
+              }
+            }
+          }
+        }
+      },
+      "Argus": {
+        "properties": {
+          "source": {
+            "properties": {
+              "ttl": {
+                "type": "long"
+              },
+              "loss": {
+                "type": "long"
+              },
+              "load": {
+                "type": "float"
+              },
+              "jitter": {
+                "type": "float"
+              },
+              "packet_count": {
+                "type": "long"
+              },
+              "packet_mean_size": {
+                "type": "long"
+              },
+              "interpacket_time": {
+                "type": "float"
+              }
+            }
+          },
+          "destination": {
+            "properties": {
+              "ttl": {
+                "type": "long"
+              },
+              "loss": {
+                "type": "long"
+              },
+              "load": {
+                "type": "float"
+              },
+              "jitter": {
+                "type": "float"
+              },
+              "packet_count": {
+                "type": "long"
+              },
+              "packet_mean_size": {
+                "type": "long"
+              },
+              "interpacket_time": {
+                "type": "float"
+              }
+            }
+          },
+          "tcp": {
+            "properties": {
+              "rtt": {
+                "type": "float"
+              },
+              "synack": {
+                "type": "float"
+              },
+              "ackdat": {
+                "type": "float"
+              },
+              "source": {
+                "properties": {
+                  "window_size": {
+                    "type": "long"
+                  },
+                  "base_sequence_number": {
+                    "type": "long"
+                  }
+                }
+              },
+              "destination": {
+                "properties": {
+                  "window_size": {
+                    "type": "long"
+                  },
+                  "base_sequence_number": {
+                    "type": "long"
+                  }
+                }
+              }
+            }
+          },
+          "transaction": {
+            "properties": {
+              "state": {
+                "type": "text",
+                "fields": {
+                  "keyword": {
+                    "type": "keyword",
+                    "ignore_above": 256
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "source": {
+        "properties": {
+          "bytes": {
+            "type": "long"
+          },
+          "ip": {
+            "type": "ip"
+          },
+          "port": {
+            "type": "long"
+          }
+        }
+      },
+      "tags": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "type": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      }
+    }
+  }
+}
