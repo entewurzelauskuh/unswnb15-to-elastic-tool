@@ -258,7 +258,7 @@ if __name__ == "__main__":
         req.add_header("Content-Type", "application/json; charset=utf-8")
         json_data = json.dumps(body)
         json_data_as_bytes = json_data.encode("utf-8")
-        req.add_header("Authorization", f"Basic {base64.b64encode(f'ES_USER:ES_PW')}")
+        req.add_header("Authorization", f"Basic {base64.b64encode(f'{ES_USER}:{ES_PW}')}")
         req.add_header("Content-Length", len(json_data_as_bytes))
         ssl._create_default_https_context = ssl._create_unverified_context
         response = urllib.request.urlopen(req, json_data_as_bytes)
