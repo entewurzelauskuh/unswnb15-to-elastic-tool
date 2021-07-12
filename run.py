@@ -16,22 +16,22 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 urllib3.disable_warnings(urllib3.HTTPResponse)
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Script to import UNSW-NB15 data from CSV into elasticsearch.")
+    parser = argparse.ArgumentParser(description="Script to import TON_IoT data from CSV into elasticsearch.")
     parser.add_argument("-e --es_host", dest="es_host", type=str, default="127.0.0.1",
                         help="Address to the elasticsearch instance. Defaults to 127.0.0.1/localhost.")
-    parser.add_argument("-p --es_port", dest="es_port", type=int, default=9200,
+    parser.add_argument("-po --es_port", dest="es_port", type=int, default=9200,
                         help="Port of the elasticsearch instance. Defaults to 9200.")
     parser.add_argument("-u --es_user", dest="es_user", type=str, required=True,
                         help="Username of elasticsearch account which has to have write access to the target index. "
                              "Required.")
-    parser.add_argument("-p --es_password", dest="es_password", type=str, required=True,
+    parser.add_argument("-pa --es_password", dest="es_password", type=str, required=True,
                         help="Password of elasticsearch account. Required.")
     parser.add_argument("-i --es_index", dest="es_index", type=str, required=True,
                         help="Target index to write into. Required.")
     parser.add_argument("-m --http_method", dest="http_method", type=str, default="https",
-                        help="Override http method, if https is not supported.")
-    parser.add_argument("-l --disable_logging", dest="disable_logging", action="store_true", default=False,
-                        help="Disable logging.")
+                        help="Specify http method. Default method is https.")
+    parser.add_argument("-l --logging", dest="logging", default="INFO",
+                        help="Set logging severity. Defaults to INFO.")
     params = parser.parse_args()
 
     ES_HOST = params.es_host
@@ -40,28 +40,37 @@ if __name__ == "__main__":
     ES_PW = params.es_password
     INDEX_NAME = params.es_index
     HTTP_METHOD = params.http_method
-    DISABLE_LOGGING = params.disable_logging
+    LOGGING = params.logging
 
-    if not DISABLE_LOGGING:
-        # Create logging instance with file output
-        LOG_FORMATTER = logging.Formatter(fmt="%(asctime)s :: %(levelname)s :: %(message)s", datefmt="%H:%M:%S")
-        LOGGER = logging.getLogger(__name__)
-        
-        FILE_HANDLER = logging.FileHandler(Path(f"./run-{datetime.now().strftime('%d-%m-%YT%H-%M-%S')}.log"))
-        FILE_HANDLER.setFormatter(LOG_FORMATTER)
-        LOGGER.addHandler(FILE_HANDLER)
-        
-        CONSOLE_HANDLER = logging.StreamHandler()
-        CONSOLE_HANDLER.setFormatter(LOG_FORMATTER)
-        LOGGER.addHandler(CONSOLE_HANDLER)
-        
+    # Create logging instance with file output
+    LOG_FORMATTER = logging.Formatter(fmt="%(asctime)s :: %(levelname)s :: %(message)s", datefmt="%H:%M:%S")
+    LOGGER = logging.getLogger(__name__)
+
+    FILE_HANDLER = logging.FileHandler(Path(f"./run-{datetime.now().strftime('%d-%m-%YT%H-%M-%S')}.log"))
+    FILE_HANDLER.setFormatter(LOG_FORMATTER)
+    LOGGER.addHandler(FILE_HANDLER)
+
+    CONSOLE_HANDLER = logging.StreamHandler()
+    CONSOLE_HANDLER.setFormatter(LOG_FORMATTER)
+    LOGGER.addHandler(CONSOLE_HANDLER)
+
+    if LOGGING == "DEBUG":
+        LOGGER.setLevel(logging.DEBUG)
+    elif LOGGING == "WARNING":
+        LOGGER.setLevel(logging.WARNING)
+    elif LOGGING == "ERROR":
+        LOGGER.setLevel(logging.ERROR)
+    elif LOGGING == "CRITICAL":
+        LOGGER.setLevel(logging.CRITICAL)
+    else:
         LOGGER.setLevel(logging.INFO)
 
     # Reading in the csv files
-    os.chdir(Path("./data/"))
+    folder = "./data/"
+    os.chdir(Path(folder))
     li = []
     for file in glob.glob("*.csv"):
-        if not DISABLE_LOGGING: LOGGER.info(f"Found file '{file}'! Loading ...")
+        LOGGER.info(f"Found file '{file}'! Loading ...")
         df = pd.read_csv(filepath_or_buffer=file, sep=",", names=["srcip", "sport", "dstip", "dsport", "proto",
                                                                   "state", "dur", "sbytes", "dbytes", "sttl", "dttl",
                                                                   "sloss", "dloss", "service", "Sload", "Dload",
@@ -82,10 +91,9 @@ if __name__ == "__main__":
         LOGGER.error("Couldn't find any csv file in the data folder, aborting.")
         exit(1)
     df = pd.concat(li, axis=0, ignore_index=True)
-    if not DISABLE_LOGGING: LOGGER.info("Final DataFrame:")
-    if not DISABLE_LOGGING: LOGGER.info(f"{df.info()}")
-    if not DISABLE_LOGGING: LOGGER.info(f"{df.to_string(max_rows=10, max_cols=100)}")
+    li = []     # Clear memory
 
+    LOGGER.info("Finished loading, preprocessing ...")
     # Fill NaN values with a 0
     df.fillna(0, inplace=True)
     # Replace empty and whitespace values with a 0
@@ -132,12 +140,18 @@ if __name__ == "__main__":
                     "Label": np.uint8})
     # Sort the DataFrame by Stime
     df.sort_values(by=["Stime"], inplace=True, ignore_index=True)
-    if not DISABLE_LOGGING: LOGGER.info("Finished loading and preprocessing.")
-    if not DISABLE_LOGGING: LOGGER.info(f"{df.info()}")
-    if not DISABLE_LOGGING: LOGGER.info(f"{df.to_string(max_rows=10, max_cols=100)}")
+    LOGGER.info("Finished!")
+    LOGGER.debug(f"\n{df.to_string(max_rows=10, max_cols=100)}")
+    LOGGER.debug(f"\n{df.dtypes}")
 
+    count = 0
+    LOGGER.info(f"Ready to send {df.shape[0]} docs to cluster, Starting!")
     # Begin creating one request body per DataFrame row and send it to elastic search
     for index, row in df.iterrows():
+        count = count + 1
+        if count % 5000 == 0:
+            LOGGER.info(f"{count / df.shape[0] * 100:.2f}% ...")
+
         if row["Label"] == 1:
             attack = "attack"
         else:
@@ -253,16 +267,18 @@ if __name__ == "__main__":
         if "-" not in row["state"]:
             body["Argus"]["transaction"] = {"state": row["state"]}
 
-        elastic_target = f"{HTTP_METHOD}://{ES_HOST}:{ES_PORT}/{INDEX_NAME}/_doc/"
+        LOGGER.debug(f"Sending {body}")
+
+        elastic_target = f"{HTTP_METHOD}://{ES_HOST}:{ES_PORT}/{INDEX_NAME}/_doc"
         req = urllib.request.Request(elastic_target)
-        req.add_header("Content-Type", "application/json; charset=utf-8")
         json_data = json.dumps(body)
         json_data_as_bytes = json_data.encode("utf-8")
-        req.add_header("Authorization", f"Basic {base64.b64encode(f'{ES_USER}:{ES_PW}')}")
+        credentials = base64.b64encode(f"{ES_USER}:{ES_PW}".encode("utf-8")).decode("utf-8")
+        req.add_header("Authorization", f"Basic {credentials}")
+        req.add_header("Content-Type", "application/json; charset=utf-8")
         req.add_header("Content-Length", len(json_data_as_bytes))
         ssl._create_default_https_context = ssl._create_unverified_context
         response = urllib.request.urlopen(req, json_data_as_bytes)
+        LOGGER.debug(f"Response {json.loads(response.read().decode('utf-8'))}")
 
-        if not DISABLE_LOGGING: LOGGER.info(f"Response for index {index}: {response.decode('utf-8')}")
-
-    if not DISABLE_LOGGING: LOGGER.info("All done! Please check your index for completeness.")
+    LOGGER.info("All done! Please check your index for completeness.")
