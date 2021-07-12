@@ -16,7 +16,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 urllib3.disable_warnings(urllib3.HTTPResponse)
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Script to import TON_IoT data from CSV into elasticsearch.")
+    parser = argparse.ArgumentParser(description="Script to import UNSW-NB15 data from CSV into elasticsearch.")
     parser.add_argument("-e --es_host", dest="es_host", type=str, default="127.0.0.1",
                         help="Address to the elasticsearch instance. Defaults to 127.0.0.1/localhost.")
     parser.add_argument("-po --es_port", dest="es_port", type=int, default=9200,
@@ -84,8 +84,8 @@ if __name__ == "__main__":
                                                                   "ct_src_ltm", "ct_src_dport_ltm", "ct_dst_sport_ltm",
                                                                   "ct_dst_src_ltm", "attack_cat", "Label"],
                          engine="python")
-        if not DISABLE_LOGGING: LOGGER.info(f"{df.info()}")
-        if not DISABLE_LOGGING: LOGGER.info(f"{df.to_string(max_rows=10, max_cols=100)}")
+        LOGGER.info(f"{df.info()}")
+        LOGGER.info(f"{df.to_string(max_rows=10, max_cols=100)}")
         li.append(df)
     if not li:
         LOGGER.error("Couldn't find any csv file in the data folder, aborting.")
